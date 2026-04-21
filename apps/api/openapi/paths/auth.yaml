@@ -2,13 +2,35 @@ otpRequest:
   post:
     operationId: requestOtp
     summary: Send SMS OTP to a phone number
+    description: Public endpoint. Starts login by requesting a one-time code for the given phone number.
+    x-codeSamples:
+      - lang: cURL
+        label: Request OTP (cURL)
+        source: |
+          curl -X POST http://localhost:3000/auth/otp/request \
+            -H "Content-Type: application/json" \
+            -d '{"phone":"+2348012345678"}'
+      - lang: JavaScript
+        label: Request OTP (fetch)
+        source: |
+          await fetch("http://localhost:3000/auth/otp/request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: "+2348012345678" }),
+          });
     tags: [Auth]
+    security: []
     requestBody:
       required: true
       content:
         application/json:
           schema:
             $ref: "../schemas/auth.yaml#/OtpRequest"
+          examples:
+            lagosUser:
+              summary: Request OTP for a Lagos commuter
+              value:
+                phone: "+2348012345678"
     responses:
       "204":
         description: OTP sent
@@ -17,13 +39,37 @@ otpVerify:
   post:
     operationId: verifyOtp
     summary: Verify OTP code and return token
+    description: Public endpoint. Exchanges a valid OTP code for a bearer token used on protected routes.
+    x-codeSamples:
+      - lang: cURL
+        label: Verify OTP (cURL)
+        source: |
+          curl -X POST http://localhost:3000/auth/otp/verify \
+            -H "Content-Type: application/json" \
+            -d '{"phone":"+2348012345678","code":"1234"}'
+      - lang: JavaScript
+        label: Verify OTP (fetch)
+        source: |
+          const verifyResponse = await fetch("http://localhost:3000/auth/otp/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: "+2348012345678", code: "1234" }),
+          });
+          const { token } = await verifyResponse.json();
     tags: [Auth]
+    security: []
     requestBody:
       required: true
       content:
         application/json:
           schema:
             $ref: "../schemas/auth.yaml#/OtpVerifyRequest"
+          examples:
+            withCode:
+              summary: Verify OTP and receive auth token
+              value:
+                phone: "+2348012345678"
+                code: "1234"
     responses:
       "200":
         description: Verified
@@ -31,24 +77,67 @@ otpVerify:
           application/json:
             schema:
               $ref: "../schemas/auth.yaml#/OtpVerifyResponse"
+            examples:
+              success:
+                summary: Token issued
+                value:
+                  token: "token_user_001_1713722394"
+                  phone: "+2348012345678"
       "401":
         description: Invalid code
         content:
           application/json:
             schema:
               $ref: "../schemas/auth.yaml#/ErrorResponse"
+            examples:
+              invalidCode:
+                summary: Wrong OTP
+                value:
+                  error: "Invalid code"
 
 updateMe:
   post:
     operationId: updateMe
     summary: Update signed-in user's profile
+    description: |
+      Protected endpoint. Requires a Bearer token in the Authorization header.
+
+      Example header:
+      `Authorization: Bearer token_user_001_1713722394`
+    x-codeSamples:
+      - lang: cURL
+        label: Update profile (cURL)
+        source: |
+          curl -X POST http://localhost:3000/me \
+            -H "Authorization: Bearer token_user_001_1713722394" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Rasul Omeni","company":"NaijaRides"}'
+      - lang: JavaScript
+        label: Update profile (fetch)
+        source: |
+          await fetch("http://localhost:3000/me", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer token_user_001_1713722394",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: "Rasul Omeni", company: "NaijaRides" }),
+          });
     tags: [Auth]
+    security:
+      - bearerAuth: []
     requestBody:
       required: true
       content:
         application/json:
           schema:
             $ref: "../schemas/auth.yaml#/MeUpdateRequest"
+          examples:
+            updateProfile:
+              summary: Update profile after OTP login
+              value:
+                name: "Rasul Omeni"
+                company: "NaijaRides"
     responses:
       "200":
         description: Profile updated
@@ -56,5 +145,22 @@ updateMe:
           application/json:
             schema:
               $ref: "../schemas/auth.yaml#/MeUpdateResponse"
+            examples:
+              updated:
+                summary: Updated profile
+                value:
+                  name: "Rasul Omeni"
+                  company: "NaijaRides"
       "204":
         description: Profile updated (no body)
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/ErrorResponse"
+            examples:
+              unauthorized:
+                summary: Missing auth token
+                value:
+                  error: "Unauthorized"

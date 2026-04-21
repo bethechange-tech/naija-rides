@@ -4,6 +4,9 @@ OtpRequest:
   properties:
     phone:
       type: string
+      example: "+2348012345678"
+  example:
+    phone: "+2348012345678"
 
 OtpVerifyRequest:
   type: object
@@ -11,16 +14,26 @@ OtpVerifyRequest:
   properties:
     phone:
       type: string
+      example: "+2348012345678"
     code:
       type: string
+      example: "1234"
+  example:
+    phone: "+2348012345678"
+    code: "1234"
 
 OtpVerifyResponse:
   type: object
   properties:
     token:
       type: string
+      example: "token_user_001_1713722394"
     phone:
       type: string
+      example: "+2348012345678"
+  example:
+    token: "token_user_001_1713722394"
+    phone: "+2348012345678"
 
 MeUpdateRequest:
   type: object
@@ -28,19 +41,32 @@ MeUpdateRequest:
   properties:
     name:
       type: string
+      example: "Rasul Omeni"
     company:
       type: string
+      example: "NaijaRides"
+  example:
+    name: "Rasul Omeni"
+    company: "NaijaRides"
 
 MeUpdateResponse:
   type: object
   properties:
     name:
       type: string
+      example: "Rasul Omeni"
     company:
       type: string
+      example: "NaijaRides"
+  example:
+    name: "Rasul Omeni"
+    company: "NaijaRides"
 
 ErrorResponse:
   type: object
   properties:
     error:
       type: string
+      example: "Unauthorized"
+  example:
+    error: "Unauthorized"

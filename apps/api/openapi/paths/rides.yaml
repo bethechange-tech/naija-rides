@@ -2,7 +2,10 @@ searchRides:
   get:
     operationId: searchRides
     summary: Search active rides on a route
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     parameters:
       - in: query
         name: from
@@ -23,12 +26,21 @@ searchRides:
               type: array
               items:
                 $ref: "../schemas/rides.yaml#/Ride"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 todayRide:
   get:
     operationId: getTodayRide
     summary: Get the signed-in user's ride for today
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     responses:
       "200":
         description: Ride for today or null
@@ -39,12 +51,21 @@ todayRide:
               allOf:
                 - $ref: "../schemas/rides.yaml#/Ride"
               nullable: true
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 respondToRide:
   post:
     operationId: respondToRide
     summary: Record riding or skipping for today
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     parameters:
       - in: path
         name: rideId
@@ -66,12 +87,21 @@ respondToRide:
               $ref: "../schemas/rides.yaml#/RideRespondResponse"
       "204":
         description: Response recorded (no body)
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 joinRide:
   post:
     operationId: joinRide
     summary: Join a ride as a passenger
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     parameters:
       - in: path
         name: rideId
@@ -99,12 +129,21 @@ joinRide:
           application/json:
             schema:
               $ref: "../schemas/rides.yaml#/RideError"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 createRide:
   post:
     operationId: createRide
     summary: Create a new ride
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     requestBody:
       required: true
       content:
@@ -118,12 +157,21 @@ createRide:
           application/json:
             schema:
               $ref: "../schemas/rides.yaml#/Ride"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 myRiderRides:
   get:
     operationId: getMyRiderRides
     summary: Get my ride bookings as a passenger
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     responses:
       "200":
         description: Rider bookings
@@ -133,12 +181,21 @@ myRiderRides:
               type: array
               items:
                 $ref: "../schemas/rides.yaml#/RiderBookingItem"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 myDriverRides:
   get:
     operationId: getMyDriverRides
     summary: Get rides I created
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     responses:
       "200":
         description: Driver rides
@@ -148,12 +205,21 @@ myDriverRides:
               type: array
               items:
                 $ref: "../schemas/rides.yaml#/DriverRideItem"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 cancelRide:
   delete:
     operationId: cancelRide
     summary: Driver cancels a ride and all its bookings
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     parameters:
       - in: path
         name: rideId
@@ -175,12 +241,21 @@ cancelRide:
           application/json:
             schema:
               $ref: "../schemas/rides.yaml#/RideError"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
 
 cancelBooking:
   delete:
     operationId: cancelBooking
     summary: Passenger cancels their own booking
+    description: Protected endpoint. Requires a Bearer token in the Authorization header.
     tags: [Rides]
+    security:
+      - bearerAuth: []
     parameters:
       - in: path
         name: bookingId
@@ -198,6 +273,12 @@ cancelBooking:
               $ref: "../schemas/rides.yaml#/RideError"
       "404":
         description: Booking not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
+      "401":
+        description: Missing or invalid bearer token
         content:
           application/json:
             schema:

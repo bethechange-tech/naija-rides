@@ -5,6 +5,8 @@ import path from "node:path";
 import addFormats from "ajv-formats";
 import { apiReference } from "@scalar/express-api-reference";
 import { $RefParser } from "@apidevtools/json-schema-ref-parser";
+import { resolveUserIdByToken } from "./data/index.js";
+import type { RequestWithAuth } from "./types/http.js";
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,6 +48,37 @@ app.use("/docs", apiReference({
   theme: "kepler",
   pageTitle: "NaijaRides API Docs",
 }));
+
+const publicPaths = new Set<string>([
+  "/health",
+  "/auth/otp/request",
+  "/auth/otp/verify",
+  "/openapi.json",
+]);
+
+app.use((req: RequestWithAuth, res, next) => {
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
+  if (req.path.startsWith("/docs") || publicPaths.has(req.path)) {
+    return next();
+  }
+
+  const authHeader = req.header("authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const token = authHeader.slice("Bearer ".length).trim();
+  const userId = resolveUserIdByToken(token);
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  req.authUserId = userId;
+  return next();
+});
 
 const api = new OpenAPIBackend({
   definition: openApiPath,

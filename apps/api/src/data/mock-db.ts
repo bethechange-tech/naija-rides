@@ -110,7 +110,9 @@ export class NaijaRidesService {
       this.upsertUser({ id: `user_${Date.now()}`, phone, name: "" });
     }
 
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const code = process.env.NODE_ENV === "test"
+      ? "1234"
+      : Math.floor(1000 + Math.random() * 9000).toString();
     this.repo.otpCodesByPhone.set(phone, code);
     console.log(`[mock] OTP for ${phone}: ${code}`);
   }
@@ -403,3 +405,9 @@ const seedData: DbSeedData = {
 export const naijaRidesRepository = new MapNaijaRidesRepository();
 export const naijaRidesService = new NaijaRidesService(naijaRidesRepository, CURRENT_USER_ID);
 naijaRidesService.seed(seedData);
+
+export const createNaijaRidesServiceForUser = (userId: string) =>
+  new NaijaRidesService(naijaRidesRepository, userId);
+
+export const resolveUserIdByToken = (token: string) =>
+  naijaRidesRepository.tokensToUserId.get(token);

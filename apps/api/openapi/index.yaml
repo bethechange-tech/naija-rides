@@ -2,6 +2,18 @@ openapi: 3.0.3
 info:
   title: NR Lagos API
   version: 1.0.0
+  description: |
+    OTP login flow:
+    1. `POST /auth/otp/request` with a phone number to request an OTP.
+    2. `POST /auth/otp/verify` with phone and code to receive a bearer token.
+    3. Send `Authorization: Bearer <token>` for all protected routes.
+
+    Public routes:
+    - `/health`
+    - `/auth/otp/request`
+    - `/auth/otp/verify`
+
+    All other API routes are protected.
 
 components:
   securitySchemes:
@@ -14,11 +26,11 @@ security:
 
 tags:
   - name: Health
-    description: System health
+    description: Public system health endpoint
   - name: Auth
-    description: OTP authentication
+    description: OTP login endpoints and authenticated profile update
   - name: Rides
-    description: Ride discovery and matching
+    description: Protected ride discovery, booking, and management endpoints
 
 paths:
   /health:
