@@ -1,0 +1,204 @@
+searchRides:
+  get:
+    operationId: searchRides
+    summary: Search active rides on a route
+    tags: [Rides]
+    parameters:
+      - in: query
+        name: from
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: to
+        required: true
+        schema:
+          type: string
+    responses:
+      "200":
+        description: Matching rides
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/rides.yaml#/Ride"
+
+todayRide:
+  get:
+    operationId: getTodayRide
+    summary: Get the signed-in user's ride for today
+    tags: [Rides]
+    responses:
+      "200":
+        description: Ride for today or null
+        content:
+          application/json:
+            schema:
+              type: object
+              allOf:
+                - $ref: "../schemas/rides.yaml#/Ride"
+              nullable: true
+
+respondToRide:
+  post:
+    operationId: respondToRide
+    summary: Record riding or skipping for today
+    tags: [Rides]
+    parameters:
+      - in: path
+        name: rideId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/rides.yaml#/RideRespondRequest"
+    responses:
+      "200":
+        description: Response recorded
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideRespondResponse"
+      "204":
+        description: Response recorded (no body)
+
+joinRide:
+  post:
+    operationId: joinRide
+    summary: Join a ride as a passenger
+    tags: [Rides]
+    parameters:
+      - in: path
+        name: rideId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/rides.yaml#/JoinRideRequest"
+    responses:
+      "200":
+        description: Joined ride
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/Ride"
+      "204":
+        description: Joined ride (no body)
+      "409":
+        description: Ride full or already joined
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
+
+createRide:
+  post:
+    operationId: createRide
+    summary: Create a new ride
+    tags: [Rides]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/rides.yaml#/CreateRideRequest"
+    responses:
+      "201":
+        description: Ride created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/Ride"
+
+myRiderRides:
+  get:
+    operationId: getMyRiderRides
+    summary: Get my ride bookings as a passenger
+    tags: [Rides]
+    responses:
+      "200":
+        description: Rider bookings
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/rides.yaml#/RiderBookingItem"
+
+myDriverRides:
+  get:
+    operationId: getMyDriverRides
+    summary: Get rides I created
+    tags: [Rides]
+    responses:
+      "200":
+        description: Driver rides
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/rides.yaml#/DriverRideItem"
+
+cancelRide:
+  delete:
+    operationId: cancelRide
+    summary: Driver cancels a ride and all its bookings
+    tags: [Rides]
+    parameters:
+      - in: path
+        name: rideId
+        required: true
+        schema:
+          type: string
+    responses:
+      "204":
+        description: Ride cancelled
+      "403":
+        description: Not the driver
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
+      "404":
+        description: Ride not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
+
+cancelBooking:
+  delete:
+    operationId: cancelBooking
+    summary: Passenger cancels their own booking
+    tags: [Rides]
+    parameters:
+      - in: path
+        name: bookingId
+        required: true
+        schema:
+          type: string
+    responses:
+      "204":
+        description: Booking cancelled
+      "403":
+        description: Not your booking
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"
+      "404":
+        description: Booking not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/rides.yaml#/RideError"

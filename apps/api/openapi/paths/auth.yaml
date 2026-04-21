@@ -1,0 +1,60 @@
+otpRequest:
+  post:
+    operationId: requestOtp
+    summary: Send SMS OTP to a phone number
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/auth.yaml#/OtpRequest"
+    responses:
+      "204":
+        description: OTP sent
+
+otpVerify:
+  post:
+    operationId: verifyOtp
+    summary: Verify OTP code and return token
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/auth.yaml#/OtpVerifyRequest"
+    responses:
+      "200":
+        description: Verified
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/OtpVerifyResponse"
+      "401":
+        description: Invalid code
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/ErrorResponse"
+
+updateMe:
+  post:
+    operationId: updateMe
+    summary: Update signed-in user's profile
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/auth.yaml#/MeUpdateRequest"
+    responses:
+      "200":
+        description: Profile updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/MeUpdateResponse"
+      "204":
+        description: Profile updated (no body)

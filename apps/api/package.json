@@ -1,0 +1,33 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm generate:types && tsup --clean",
+    "check-types": "pnpm generate:types && tsc --noEmit",
+    "dev": "pnpm generate:types && tsup --watch --no-clean --onSuccess 'pnpm start'",
+    "generate:types": "openapi-typescript openapi/index.yaml -o src/openapi-types.ts",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^15.3.5",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@scalar/express-api-reference": "^0.9.9",
+    "ajv-formats": "^3.0.1",
+    "express": "^5.1.0",
+    "openapi-backend": "^5.16.1",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/supertest": "^7.2.0",
+    "openapi-typescript": "^7.13.0",
+    "supertest": "^7.2.2",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  }
+}

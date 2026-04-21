@@ -1,0 +1,40 @@
+UserRow:
+  type: object
+  required: [id, phone, name]
+  properties:
+    id:
+      type: string
+    phone:
+      type: string
+    name:
+      type: string
+    company:
+      type: string
+
+RideBookingRow:
+  type: object
+  required: [id, rideId, riderUserId]
+  properties:
+    id:
+      type: string
+    rideId:
+      type: string
+    riderUserId:
+      type: string
+    cancelledAt:
+      type: string
+      format: date-time
+
+RideResponseRow:
+  type: object
+  required: [userId, rideId, date, riding]
+  properties:
+    userId:
+      type: string
+    rideId:
+      type: string
+    date:
+      type: string
+      description: ISO date (YYYY-MM-DD)
+    riding:
+      type: boolean

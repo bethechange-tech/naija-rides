@@ -1,0 +1,135 @@
+Ride:
+  type: object
+  required:
+    - id
+    - from
+    - to
+    - time
+    - price
+    - seatsTotal
+    - seatsTaken
+    - driverName
+    - status
+    - repeatDays
+  properties:
+    id:
+      type: string
+    from:
+      type: string
+    to:
+      type: string
+    time:
+      type: string
+      description: Display time string (e.g. 7:30 AM)
+    price:
+      type: integer
+      description: Whole Naira amount
+    seatsTotal:
+      type: integer
+    seatsTaken:
+      type: integer
+    driverName:
+      type: string
+    driverCompany:
+      type: string
+    status:
+      type: string
+      enum: [active, cancelled, completed]
+    repeatDays:
+      type: array
+      items:
+        type: string
+        enum: [Mon, Tue, Wed, Thu, Fri]
+
+RideRespondRequest:
+  type: object
+  required: [riding]
+  properties:
+    riding:
+      type: boolean
+
+RideRespondResponse:
+  type: object
+  required: [rideId, riding, date]
+  properties:
+    rideId:
+      type: string
+    riding:
+      type: boolean
+    date:
+      type: string
+      description: ISO date (YYYY-MM-DD)
+
+JoinRideRequest:
+  type: object
+  additionalProperties: false
+
+CreateRideRequest:
+  type: object
+  required: [from, to, time, seats, price, repeatDays]
+  properties:
+    from:
+      type: string
+      minLength: 1
+    to:
+      type: string
+      minLength: 1
+    time:
+      type: string
+    seats:
+      type: integer
+      minimum: 1
+    price:
+      type: integer
+      minimum: 0
+    repeatDays:
+      type: array
+      minItems: 1
+      items:
+        type: string
+        enum: [Mon, Tue, Wed, Thu, Fri]
+
+RideError:
+  type: object
+  required: [error]
+  properties:
+    error:
+      type: string
+
+RiderBookingItem:
+  type: object
+  required: [id, from, to, time, driverName, status]
+  properties:
+    id:
+      type: string
+      description: Booking id
+    from:
+      type: string
+    to:
+      type: string
+    time:
+      type: string
+    driverName:
+      type: string
+    status:
+      type: string
+      enum: [active, cancelled, completed]
+
+DriverRideItem:
+  type: object
+  required: [id, from, to, time, passengersCount, status]
+  properties:
+    id:
+      type: string
+      description: Ride id
+    from:
+      type: string
+    to:
+      type: string
+    time:
+      type: string
+    passengersCount:
+      type: integer
+    status:
+      type: string
+      enum: [active, cancelled, completed]

@@ -1,0 +1,46 @@
+OtpRequest:
+  type: object
+  required: [phone]
+  properties:
+    phone:
+      type: string
+
+OtpVerifyRequest:
+  type: object
+  required: [phone, code]
+  properties:
+    phone:
+      type: string
+    code:
+      type: string
+
+OtpVerifyResponse:
+  type: object
+  properties:
+    token:
+      type: string
+    phone:
+      type: string
+
+MeUpdateRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+    company:
+      type: string
+
+MeUpdateResponse:
+  type: object
+  properties:
+    name:
+      type: string
+    company:
+      type: string
+
+ErrorResponse:
+  type: object
+  properties:
+    error:
+      type: string

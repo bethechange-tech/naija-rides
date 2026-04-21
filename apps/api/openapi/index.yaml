@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: NR Lagos API
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: System health
+  - name: Auth
+    description: OTP authentication
+  - name: Rides
+    description: Ride discovery and matching
+
+paths:
+  /health:
+    $ref: "./paths/health.yaml"
+
+  /auth/otp/request:
+    $ref: "./paths/auth.yaml#/otpRequest"
+
+  /auth/otp/verify:
+    $ref: "./paths/auth.yaml#/otpVerify"
+
+  /me:
+    $ref: "./paths/auth.yaml#/updateMe"
+
+  /rides/search:
+    $ref: "./paths/rides.yaml#/searchRides"
+
+  /rides/today:
+    $ref: "./paths/rides.yaml#/todayRide"
+
+  /rides/{rideId}/respond:
+    $ref: "./paths/rides.yaml#/respondToRide"
+
+  /rides/{rideId}/join:
+    $ref: "./paths/rides.yaml#/joinRide"
+
+  /rides:
+    $ref: "./paths/rides.yaml#/createRide"
+
+  /me/rides/rider:
+    $ref: "./paths/rides.yaml#/myRiderRides"
+
+  /me/rides/driver:
+    $ref: "./paths/rides.yaml#/myDriverRides"
+
+  /rides/{rideId}:
+    $ref: "./paths/rides.yaml#/cancelRide"
+
+  /me/rides/rider/{bookingId}:
+    $ref: "./paths/rides.yaml#/cancelBooking"
