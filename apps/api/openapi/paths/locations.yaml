@@ -1,0 +1,55 @@
+listLocations:
+  get:
+    operationId: listLocations
+    summary: List all Lagos locations with aliases
+    description: |
+      Public endpoint. Returns all supported Lagos pickup and drop-off locations.
+      Each location has a canonical name and a list of aliases (common shorthands used by commuters).
+
+      Use these values to populate autocomplete in ride search. Both the canonical name
+      and any alias are accepted in `GET /rides/search?from=&to=`.
+    tags: [Locations]
+    security: []
+    parameters:
+      - in: query
+        name: q
+        required: false
+        schema:
+          type: string
+        description: Filter by name or alias (case-insensitive substring match). Omit to return all locations.
+        example: "ike"
+    x-codeSamples:
+      - lang: cURL
+        label: All locations (cURL)
+        source: |
+          curl http://localhost:3000/locations
+      - lang: cURL
+        label: Search locations (cURL)
+        source: |
+          curl "http://localhost:3000/locations?q=ike"
+      - lang: JavaScript
+        label: Search locations (fetch)
+        source: |
+          const locations = await fetch("http://localhost:3000/locations?q=ike").then(r => r.json());
+    responses:
+      "200":
+        description: All supported Lagos locations with aliases
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/locations.yaml#/Location"
+            examples:
+              default:
+                summary: Sample locations
+                value:
+                  - id: yaba
+                    name: Yaba
+                    aliases: ["Sabo", "Yaba Tech", "Herbert Macaulay Way"]
+                  - id: vi
+                    name: Victoria Island
+                    aliases: ["VI", "Eti-Osa"]
+                  - id: ikeja
+                    name: Ikeja
+                    aliases: ["Computer Village", "Ikeja CBD", "Allen Avenue"]

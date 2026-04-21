@@ -29,12 +29,17 @@ tags:
     description: Public system health endpoint
   - name: Auth
     description: OTP login endpoints and authenticated profile update
+  - name: Locations
+    description: Public reference data — Lagos places with full names and aliases for ride search autocomplete
   - name: Rides
     description: Protected ride discovery, booking, and management endpoints
 
 paths:
   /health:
     $ref: "./paths/health.yaml"
+
+  /locations:
+    $ref: "./paths/locations.yaml#/listLocations"
 
   /auth/otp/request:
     $ref: "./paths/auth.yaml#/otpRequest"

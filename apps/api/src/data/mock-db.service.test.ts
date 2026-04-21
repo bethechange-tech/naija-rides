@@ -19,7 +19,7 @@ const makeService = () => {
         id: "ride_active",
         driverUserId: "driver_1",
         from: "Yaba",
-        to: "VI",
+        to: "Victoria Island",
         time: "7:30 AM",
         price: 2500,
         seatsTotal: 2,
@@ -30,7 +30,7 @@ const makeService = () => {
         id: "ride_full",
         driverUserId: "driver_2",
         from: "Yaba",
-        to: "VI",
+        to: "Victoria Island",
         time: "8:00 AM",
         price: 2100,
         seatsTotal: 1,
@@ -67,6 +67,7 @@ describe("NaijaRidesService (BDD)", () => {
     it("When searching with mixed case, Then returns matching active rides only", () => {
       const { service } = makeService();
 
+      // alias match: "vI" matches "Victoria Island" alias "VI"
       const result = service.searchActiveRides("yAbA", "vI");
 
       expect(result.length).toBe(2);
@@ -76,6 +77,7 @@ describe("NaijaRidesService (BDD)", () => {
     it("When one booking is cancelled, Then seatsTaken excludes cancelled bookings", () => {
       const { service } = makeService();
 
+      // alias match: "VI" matches "Victoria Island" alias "VI"
       const result = service.searchActiveRides("Yaba", "VI");
       const rideActive = result.find((ride) => ride.id === "ride_active");
 

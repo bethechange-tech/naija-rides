@@ -1,8 +1,8 @@
 searchRides:
   get:
     operationId: searchRides
-    summary: Search active rides on a route
-    description: Protected endpoint. Requires a Bearer token in the Authorization header.
+    summary: Find rides between two locations
+    description: Protected endpoint. Requires a Bearer token in the Authorization header. Partial, case-insensitive matches on `from` and `to` are supported (e.g. `yab` matches `Yaba`).
     tags: [Rides]
     security:
       - bearerAuth: []

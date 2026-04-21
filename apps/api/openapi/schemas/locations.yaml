@@ -1,0 +1,27 @@
+Location:
+  type: object
+  required: [id, name, aliases, description]
+  properties:
+    id:
+      type: string
+      description: Stable slug identifier (lowercase, underscored)
+      example: victoria_island
+    name:
+      type: string
+      description: Official full place name
+      example: Victoria Island
+    aliases:
+      type: array
+      description: Common shorthands and alternative names used by commuters
+      items:
+        type: string
+      example: ["VI", "Eti-Osa"]
+    description:
+      type: string
+      description: Brief context about the area for riders who may be unfamiliar
+      example: Premier business and nightlife district in Lagos, home to corporate headquarters and upscale restaurants.
+  example:
+    id: victoria_island
+    name: Victoria Island
+    aliases: ["VI", "Eti-Osa"]
+    description: Premier business and nightlife district in Lagos, home to corporate headquarters and upscale restaurants.

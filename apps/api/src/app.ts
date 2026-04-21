@@ -51,6 +51,7 @@ app.use("/docs", apiReference({
 
 const publicPaths = new Set<string>([
   "/health",
+  "/locations",
   "/auth/otp/request",
   "/auth/otp/verify",
   "/openapi.json",
@@ -88,6 +89,7 @@ const api = new OpenAPIBackend({
 
 api.register({
   getHealth: handlers.getHealth,
+  listLocations: handlers.listLocations,
   requestOtp: handlers.requestOtp,
   verifyOtp: handlers.verifyOtp,
   updateMe: handlers.updateMe,

@@ -179,6 +179,29 @@ describe("NaijaRides API endpoints", () => {
         expect(response.status).toBe(204);
     });
 
+    it("GET /locations returns all locations", async () => {
+        const response = await request(app).get("/locations");
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+        expect(response.body[0]).toMatchObject({ id: expect.any(String), name: expect.any(String), aliases: expect.any(Array) });
+    });
+
+    it("GET /locations?q= filters by name and alias", async () => {
+        const byName = await request(app).get("/locations").query({ q: "ikeja" });
+        expect(byName.status).toBe(200);
+        expect(byName.body.some((l: { name: string }) => l.name === "Ikeja")).toBe(true);
+
+        const byAlias = await request(app).get("/locations").query({ q: "computer village" });
+        expect(byAlias.status).toBe(200);
+        expect(byAlias.body.some((l: { name: string }) => l.name === "Ikeja")).toBe(true);
+
+        const noMatch = await request(app).get("/locations").query({ q: "zzznomatch" });
+        expect(noMatch.status).toBe(200);
+        expect(noMatch.body).toEqual([]);
+    });
+
     it("returns 401 for protected route without token", async () => {
         const response = await request(app).get("/rides/search").query({ from: "Yaba", to: "VI" });
 

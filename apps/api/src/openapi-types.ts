@@ -21,6 +21,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all Lagos locations with aliases
+         * @description Public endpoint. Returns all supported Lagos pickup and drop-off locations.
+         *     Each location has a canonical name and a list of aliases (common shorthands used by commuters).
+         *
+         *     Use these values to populate autocomplete in ride search. Both the canonical name
+         *     and any alias are accepted in `GET /rides/search?from=&to=`.
+         */
+        get: operations["listLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/otp/request": {
         parameters: {
             query?: never;
@@ -92,8 +116,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Search active rides on a route
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * Find rides between two locations
+         * @description Protected endpoint. Requires a Bearer token in the Authorization header. Partial, case-insensitive matches on `from` and `to` are supported (e.g. `yab` matches `Yaba`).
          */
         get: operations["searchRides"];
         put?: never;
@@ -275,6 +299,42 @@ export interface components {
         };
         /**
          * @example {
+         *       "id": "victoria_island",
+         *       "name": "Victoria Island",
+         *       "aliases": [
+         *         "VI",
+         *         "Eti-Osa"
+         *       ],
+         *       "description": "Premier business and nightlife district in Lagos, home to corporate headquarters and upscale restaurants."
+         *     }
+         */
+        Location: {
+            /**
+             * @description Stable slug identifier (lowercase, underscored)
+             * @example victoria_island
+             */
+            id: string;
+            /**
+             * @description Official full place name
+             * @example Victoria Island
+             */
+            name: string;
+            /**
+             * @description Common shorthands and alternative names used by commuters
+             * @example [
+             *       "VI",
+             *       "Eti-Osa"
+             *     ]
+             */
+            aliases: string[];
+            /**
+             * @description Brief context about the area for riders who may be unfamiliar
+             * @example Premier business and nightlife district in Lagos, home to corporate headquarters and upscale restaurants.
+             */
+            description: string;
+        };
+        /**
+         * @example {
          *       "phone": "+2348012345678"
          *     }
          */
@@ -421,6 +481,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    listLocations: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter by name or alias (case-insensitive substring match). Omit to return all locations.
+                 * @example ike
+                 */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All supported Lagos locations with aliases */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"][];
                 };
             };
         };
