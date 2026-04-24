@@ -12,7 +12,7 @@ export const runGeneratePosts = async (
     Array.from({ length: count }).map(() => {
       const data = {
         id: genId(),
-        username: faker.internet.userName(),
+        username: faker.internet.username(),
         fullName: faker.person.fullName(),
         content: faker.lorem.paragraph({ min: 1, max: 3 }),
         createdAt: faker.date.recent({ days: 30 }),

@@ -1,6 +1,7 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import app from "./app.js";
+import { resetNaijaRidesData } from "./data/index.js";
 
 const TEST_USER_PHONE = "+2348000000000";
 
@@ -17,6 +18,10 @@ const loginAndGetToken = async () => {
     expect(typeof verify.body.token).toBe("string");
     return verify.body.token as string;
 };
+
+beforeEach(async () => {
+    await resetNaijaRidesData();
+});
 
 describe("NaijaRides API endpoints", () => {
     it("POST /auth/otp/request", async () => {

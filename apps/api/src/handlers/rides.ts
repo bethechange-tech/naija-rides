@@ -27,7 +27,7 @@ const getAuthedService = (req: RequestWithAuth) => {
   return createNaijaRidesServiceForUser(userId);
 };
 
-export const searchRides = (c: Context<unknown, unknown, SearchRidesQuery>, req: RequestWithAuth, res: Response) => {
+export const searchRides = async (c: Context<unknown, unknown, SearchRidesQuery>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -35,21 +35,21 @@ export const searchRides = (c: Context<unknown, unknown, SearchRidesQuery>, req:
   }
 
   const { from, to } = c.request.query;
-  res.json(service.searchActiveRides(from, to));
+  res.json(await service.searchActiveRides(from, to));
 };
 
-export const getTodayRide = (_c: Context, req: RequestWithAuth, res: Response) => {
+export const getTodayRide = async (_c: Context, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const todayRide: TodayRideResponse = service.getTodayRideForCurrentUser();
+  const todayRide: TodayRideResponse = await service.getTodayRideForCurrentUser();
   res.json(todayRide);
 };
 
-export const respondToRide = (c: Context<RespondToRideRequest, RespondToRideParams>, req: RequestWithAuth, res: Response) => {
+export const respondToRide = async (c: Context<RespondToRideRequest, RespondToRideParams>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -58,11 +58,11 @@ export const respondToRide = (c: Context<RespondToRideRequest, RespondToRidePara
 
   const { rideId } = c.request.params;
   const { riding } = c.request.requestBody;
-  const response: RespondToRideResponse = service.recordRideResponse(rideId, riding);
+  const response: RespondToRideResponse = await service.recordRideResponse(rideId, riding);
   res.status(200).json(response);
 };
 
-export const joinRide = (c: Context<JoinRideRequest, JoinRideParams>, req: RequestWithAuth, res: Response) => {
+export const joinRide = async (c: Context<JoinRideRequest, JoinRideParams>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -72,7 +72,7 @@ export const joinRide = (c: Context<JoinRideRequest, JoinRideParams>, req: Reque
   const { rideId } = c.request.params;
   void c.request.requestBody;
 
-  const result = service.joinRide(rideId);
+  const result = await service.joinRide(rideId);
   if (!result.ok) {
     res.status(result.code).json({ error: result.error });
     return;
@@ -81,7 +81,7 @@ export const joinRide = (c: Context<JoinRideRequest, JoinRideParams>, req: Reque
   res.status(200).json(result.ride);
 };
 
-export const createRide = (c: Context<CreateRideRequest>, req: RequestWithAuth, res: Response) => {
+export const createRide = async (c: Context<CreateRideRequest>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -112,33 +112,33 @@ export const createRide = (c: Context<CreateRideRequest>, req: RequestWithAuth, 
     return;
   }
 
-  const newRide: CreateRideResponse = service.createRide(payload);
+  const newRide: CreateRideResponse = await service.createRide(payload);
   res.status(201).json(newRide);
 };
 
-export const getMyRiderRides = (_c: Context, req: RequestWithAuth, res: Response) => {
+export const getMyRiderRides = async (_c: Context, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const result: MyRiderRidesResponse = service.getRiderBookingsForCurrentUser();
+  const result: MyRiderRidesResponse = await service.getRiderBookingsForCurrentUser();
   res.json(result);
 };
 
-export const getMyDriverRides = (_c: Context, req: RequestWithAuth, res: Response) => {
+export const getMyDriverRides = async (_c: Context, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const result: MyDriverRidesResponse = service.getDriverRidesForCurrentUser();
+  const result: MyDriverRidesResponse = await service.getDriverRidesForCurrentUser();
   res.json(result);
 };
 
-export const cancelRide = (c: Context<unknown, CancelRideParams>, req: RequestWithAuth, res: Response) => {
+export const cancelRide = async (c: Context<unknown, CancelRideParams>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -147,7 +147,7 @@ export const cancelRide = (c: Context<unknown, CancelRideParams>, req: RequestWi
 
   const { rideId } = c.request.params;
 
-  const result = service.cancelRide(rideId);
+  const result = await service.cancelRide(rideId);
   if (!result.ok) {
     res.status(result.code).json({ error: result.error });
     return;
@@ -156,7 +156,7 @@ export const cancelRide = (c: Context<unknown, CancelRideParams>, req: RequestWi
   res.status(204).send();
 };
 
-export const cancelBooking = (c: Context<unknown, CancelBookingParams>, req: RequestWithAuth, res: Response) => {
+export const cancelBooking = async (c: Context<unknown, CancelBookingParams>, req: RequestWithAuth, res: Response) => {
   const service = getAuthedService(req);
   if (!service) {
     res.status(401).json({ error: "Unauthorized" });
@@ -165,7 +165,7 @@ export const cancelBooking = (c: Context<unknown, CancelBookingParams>, req: Req
 
   const { bookingId } = c.request.params;
 
-  const result = service.cancelBooking(bookingId);
+  const result = await service.cancelBooking(bookingId);
   if (!result.ok) {
     res.status(result.code).json({ error: result.error });
     return;

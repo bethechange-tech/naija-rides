@@ -1,10 +1,14 @@
 export {
 	CURRENT_USER_ID,
 	createNaijaRidesServiceForUser,
-	LAGOS_LOCATIONS,
-	naijaRidesRepository,
+	ensureNaijaRidesSeeded,
+	findUserIdByToken,
 	naijaRidesService,
-	resolveUserIdByToken,
+	resetNaijaRidesData,
+	seedNaijaRidesData,
+	type NaijaRidesService,
+} from "./naija-rides-db.js";
+export {
+	LAGOS_LOCATIONS,
 	type LagosLocation,
-} from "./mock-db.js";
-export { OpenApiMockFactory } from "./openapi-mock.js";
+} from "./locations.js";

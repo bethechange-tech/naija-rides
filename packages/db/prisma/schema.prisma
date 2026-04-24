@@ -8,7 +8,20 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+enum RideStatus {
+  active
+  cancelled
+  completed
+}
+
+enum RepeatDay {
+  Mon
+  Tue
+  Wed
+  Thu
+  Fri
 }
 
 model Post {
@@ -25,11 +38,88 @@ model Post {
 model User {
   id        String   @id @db.VarChar(12)
   username  String   @unique @db.VarChar(32)
+  phone     String?  @unique @db.VarChar(20)
   name      String   @db.VarChar(32)
+  company   String?  @db.VarChar(64)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   posts Post[]
+  authTokens AuthToken[]
+  driverRides Ride[] @relation("DriverRides")
+  otpCodes OtpCode[]
+  rideBookings RideBooking[] @relation("RiderBookings")
+  rideResponses RideResponse[]
 
   @@map("users")
+}
+
+model AuthToken {
+  token     String   @id @db.VarChar(255)
+  userId    String   @db.VarChar(12) @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("auth_tokens")
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String   @unique @db.VarChar(20)
+  userId    String   @db.VarChar(12) @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  code      String   @db.VarChar(8)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_codes")
+}
+
+model Ride {
+  id           String        @id @db.VarChar(32)
+  driverUserId String        @db.VarChar(12) @map("driver_user_id")
+  driver       User          @relation("DriverRides", fields: [driverUserId], references: [id])
+  from         String        @db.VarChar(64)
+  to           String        @db.VarChar(64)
+  time         String        @db.VarChar(16)
+  price        Int
+  seatsTotal   Int           @map("seats_total")
+  status       RideStatus
+  repeatDays   RepeatDay[]   @map("repeat_days")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  rideBookings RideBooking[]
+  rideResponses RideResponse[]
+
+  @@map("rides")
+}
+
+model RideBooking {
+  id           String    @id @db.VarChar(32)
+  rideId        String    @db.VarChar(32) @map("ride_id")
+  riderUserId   String    @db.VarChar(12) @map("rider_user_id")
+  ride          Ride      @relation(fields: [rideId], references: [id])
+  rider         User      @relation("RiderBookings", fields: [riderUserId], references: [id])
+  cancelledAt   DateTime? @map("cancelled_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@unique([rideId, riderUserId])
+  @@map("ride_bookings")
+}
+
+model RideResponse {
+  id        String   @id @default(cuid())
+  userId    String   @db.VarChar(12) @map("user_id")
+  rideId    String   @db.VarChar(32) @map("ride_id")
+  date      String   @db.VarChar(10)
+  riding    Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+  ride Ride @relation(fields: [rideId], references: [id])
+
+  @@unique([userId, rideId, date])
+  @@map("ride_responses")
 }

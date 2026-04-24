@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Create a short-lived Neon branch for this PR ──────────────────────────
+  neon_branch:
+    name: Create Neon branch
+    runs-on: ubuntu-latest
+    outputs:
+      db_url: ${{ steps.create.outputs.db_url }}
+      db_url_with_pooler: ${{ steps.create.outputs.db_url_with_pooler }}
+      branch_id: ${{ steps.create.outputs.branch_id }}
+    steps:
+      - name: Set branch expiration (2 weeks)
+        run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Create Neon branch
+        id: create
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: ci/pr-${{ github.event.number }}-${{ github.sha }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          expires_at: ${{ env.EXPIRES_AT }}
+
+  # ── 2. Type-check, lint, and test ─────────────────────────────────────────────
+  test:
+    name: Type-check · Lint · Test
+    needs: neon_branch
+    runs-on: ubuntu-latest
+    env:
+      # Direct (non-pooled) URL for Prisma Migrate; pooled URL for runtime queries.
+      DATABASE_URL: ${{ needs.neon_branch.outputs.db_url_with_pooler }}
+      DIRECT_URL: ${{ needs.neon_branch.outputs.db_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @repo/db build:prisma
+        env:
+          DATABASE_URL: ${{ needs.neon_branch.outputs.db_url_with_pooler }}
+          DIRECT_URL: ${{ needs.neon_branch.outputs.db_url }}
+
+      - name: Run migrations
+        run: pnpm --filter @repo/db migrate deploy
+        env:
+          DATABASE_URL: ${{ needs.neon_branch.outputs.db_url_with_pooler }}
+          DIRECT_URL: ${{ needs.neon_branch.outputs.db_url }}
+
+      - name: Type-check (api)
+        run: pnpm --filter @repo/api check-types
+
+      - name: Lint (api)
+        run: pnpm --filter @repo/api lint
+
+      - name: Test (api)
+        run: pnpm --filter @repo/api test --run
+        env:
+          DATABASE_URL: ${{ needs.neon_branch.outputs.db_url_with_pooler }}
+          DIRECT_URL: ${{ needs.neon_branch.outputs.db_url }}
+
+  # ── 3. Always clean up the Neon branch ───────────────────────────────────────
+  cleanup:
+    name: Delete Neon branch
+    needs: [neon_branch, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_id: ${{ needs.neon_branch.outputs.branch_id }}
+          api_key: ${{ secrets.NEON_API_KEY }}
