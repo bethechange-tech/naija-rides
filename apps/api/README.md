@@ -46,8 +46,8 @@ flowchart TD
     end
 
     subgraph DB["PostgreSQL via Prisma"]
-        T[("auth_tokens / otp_codes / users")]
-        R[("rides / ride_bookings / ride_responses")]
+        T[(auth_tokens / otp_codes / users)]
+        R[(rides / ride_bookings / ride_responses)]
     end
 
     subgraph Bus["events/publisher - RideEventBus"]
@@ -103,7 +103,7 @@ sequenceDiagram
     Service->>DB: COMMIT
     Service->>Bus: emit ride.joined
     Bus-->>Service: sync / instant
-    Service-->>Handler: ok true + RideDto
+    Service-->>Handler: ok true, RideDto
     Handler-->>Client: 200 OK ride DTO
 
     Note over Log,State: Detached after response sent
