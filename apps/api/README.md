@@ -46,8 +46,8 @@ flowchart TD
     end
 
     subgraph DB["PostgreSQL via Prisma"]
-        T[(auth_tokens / otp_codes / users)]
-        R[(rides / ride_bookings / ride_responses)]
+        T[(Users, Auth, OTP)]
+        R[(Rides, Bookings, Responses)]
     end
 
     subgraph Bus["events/publisher - RideEventBus"]
