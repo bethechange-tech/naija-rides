@@ -22,6 +22,8 @@ enum RepeatDay {
   Wed
   Thu
   Fri
+  Sat
+  Sun
 }
 
 model Post {
@@ -54,8 +56,17 @@ model User {
   @@map("users")
 }
 
+model WhitelistedPhone {
+  phone     String   @id @db.VarChar(20)
+  company   String?  @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("whitelisted_phones")
+}
+
 model AuthToken {
   token     String   @id @db.VarChar(255)
+  refreshToken String @unique @map("refresh_token") @db.VarChar(255)
   userId    String   @db.VarChar(12) @map("user_id")
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now()) @map("created_at")
@@ -105,6 +116,7 @@ model RideBooking {
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@unique([rideId, riderUserId])
+  
   @@map("ride_bookings")
 }
 

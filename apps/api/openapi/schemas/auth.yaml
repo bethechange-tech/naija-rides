@@ -24,15 +24,24 @@ OtpVerifyRequest:
 
 OtpVerifyResponse:
   type: object
+  required: [phone, token, accessToken, refreshToken]
   properties:
     token:
       type: string
       example: "token_user_001_1713722394"
+    accessToken:
+      type: string
+      example: "access_user_001_1713722394"
+    refreshToken:
+      type: string
+      example: "refresh_user_001_1713722394"
     phone:
       type: string
       example: "+2348012345678"
   example:
     token: "token_user_001_1713722394"
+    accessToken: "access_user_001_1713722394"
+    refreshToken: "refresh_user_001_1713722394"
     phone: "+2348012345678"
 
 MeUpdateRequest:
@@ -59,6 +68,24 @@ MeUpdateResponse:
       type: string
       example: "NaijaRides"
   example:
+    name: "Rasul Omeni"
+    company: "NaijaRides"
+
+MeResponse:
+  type: object
+  required: [phone, name, company]
+  properties:
+    phone:
+      type: string
+      example: "+2348012345678"
+    name:
+      type: string
+      example: "Rasul Omeni"
+    company:
+      type: string
+      example: "NaijaRides"
+  example:
+    phone: "+2348012345678"
     name: "Rasul Omeni"
     company: "NaijaRides"
 

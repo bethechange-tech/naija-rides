@@ -92,7 +92,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get signed-in user's profile
+         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         */
+        get: operations["getMe"];
         put?: never;
         /**
          * Update signed-in user's profile
@@ -363,6 +367,10 @@ export interface components {
         OtpVerifyResponse: {
             /** @example token_user_001_1713722394 */
             token?: string;
+            /** @example access_user_001_1713722394 */
+            accessToken?: string;
+            /** @example refresh_user_001_1713722394 */
+            refreshToken?: string;
             /** @example +2348012345678 */
             phone?: string;
         };
@@ -374,6 +382,21 @@ export interface components {
         ErrorResponse: {
             /** @example Unauthorized */
             error?: string;
+        };
+        /**
+         * @example {
+         *       "phone": "+2348012345678",
+         *       "name": "Rasul Omeni",
+         *       "company": "NaijaRides"
+         *     }
+         */
+        MeResponse: {
+            /** @example +2348012345678 */
+            phone: string;
+            /** @example Rasul Omeni */
+            name: string;
+            /** @example NaijaRides */
+            company: string;
         };
         /**
          * @example {
@@ -413,7 +436,7 @@ export interface components {
             driverCompany?: string;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
-            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri")[];
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         RideError: {
             error: string;
@@ -434,7 +457,7 @@ export interface components {
             time: string;
             seats: number;
             price: number;
-            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri")[];
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         RiderBookingItem: {
             /** @description Booking id */
@@ -445,6 +468,7 @@ export interface components {
             driverName: string;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         DriverRideItem: {
             /** @description Ride id */
@@ -455,6 +479,7 @@ export interface components {
             passengersCount: number;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
     };
     responses: never;
@@ -566,6 +591,35 @@ export interface operations {
             };
         };
     };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Missing or invalid bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     updateMe: {
         parameters: {
             query?: never;
@@ -611,6 +665,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                day?: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
             };
             header?: never;
             path?: never;

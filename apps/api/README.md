@@ -184,12 +184,20 @@ test/
 
 ## Authentication
 
-The API uses a simple bearer-token scheme backed by the `auth_tokens` table. In test mode (`NODE_ENV=test`) OTP codes are always `1234`.
+The MVP pilot keeps the Phone → OTP flow, but OTP is mocked instead of sent by SMS.
+
+- Only whitelisted phone numbers can request and verify OTP.
+- The fixed OTP for the pilot is `1234`.
+- Successful verification returns bearer-compatible `accessToken` and `refreshToken` values.
+
+The auth records are backed by the `whitelisted_phones` and `auth_tokens` tables.
+
+When you switch to a real SMS provider later, the current auth shape should make that swap straightforward.
 
 ## Seed data
 
 Running `pnpm seed` calls `resetNaijaRidesData()` which:
 1. Clears all NaijaRides rows in dependency order
-2. Re-inserts fixture users, rides, bookings, and ride responses
+2. Re-inserts fixture users, whitelisted phones, rides, bookings, and ride responses
 
 This is also called automatically by `beforeEach` in the test suite.

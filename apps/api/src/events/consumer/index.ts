@@ -13,6 +13,15 @@ const subscriberRegistry = new RideEventSubscriberRegistry([
   new RideStateSubscriber(rideEventBus),
 ]);
 
+/** Registers ride event subscribers with the shared event bus. */
+export class RideEventSubscribers {
+  /** Starts all configured ride event subscribers. */
+  register() {
+    subscriberRegistry.registerAll();
+  }
+}
+
+/** Compatibility wrapper for older imports. */
 export const registerRideEventSubscribers = () => {
-  subscriberRegistry.registerAll();
+  new RideEventSubscribers().register();
 };

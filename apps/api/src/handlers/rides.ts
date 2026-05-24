@@ -34,8 +34,8 @@ export const searchRides = async (c: Context<unknown, unknown, SearchRidesQuery>
     return;
   }
 
-  const { from, to } = c.request.query;
-  res.json(await service.searchActiveRides(from, to));
+  const { from, to, day } = c.request.query;
+  res.json(await service.searchActiveRides(from, to, day));
 };
 
 export const getTodayRide = async (_c: Context, req: RequestWithAuth, res: Response) => {

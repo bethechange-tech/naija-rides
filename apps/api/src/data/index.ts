@@ -12,3 +12,4 @@ export {
 	LAGOS_LOCATIONS,
 	type LagosLocation,
 } from "./locations.js";
+export { NaijaRidesSeeder } from "./naija-rides-seeder.js";

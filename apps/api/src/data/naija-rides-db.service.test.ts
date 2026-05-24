@@ -1,6 +1,7 @@
 import { db } from "@repo/db";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CURRENT_USER_ID, createNaijaRidesServiceForUser, resetNaijaRidesData } from "./index.js";
+import { NaijaRidesService } from "./naija-rides-db.js";
 
 const makeService = () => {
   return createNaijaRidesServiceForUser(CURRENT_USER_ID);
@@ -11,6 +12,26 @@ beforeEach(async () => {
 });
 
 describe("NaijaRidesService (BDD)", () => {
+  describe("Given OTP login is requested", () => {
+    it("When requesting an OTP for a whitelisted number, Then stores the mock code", async () => {
+      const service = new NaijaRidesService(CURRENT_USER_ID, db);
+
+      const accepted = await service.requestOtpForPhone("+2348000000000");
+
+      expect(accepted).toBe(true);
+      const stored = await db.otpCode.findUnique({ where: { phone: "+2348000000000" } });
+      expect(stored?.code).toBe("1234");
+    });
+
+    it("When requesting an OTP for an unwhitelisted number, Then rejects it", async () => {
+      const service = new NaijaRidesService(CURRENT_USER_ID, db);
+
+      const accepted = await service.requestOtpForPhone("+2348011111111");
+
+      expect(accepted).toBe(false);
+    });
+  });
+
   describe("Given active rides on a route", () => {
     it("When searching with mixed case, Then returns matching active rides only", async () => {
       const service = makeService();
@@ -31,6 +52,57 @@ describe("NaijaRidesService (BDD)", () => {
       const rideActive = result.find((ride) => ride.id === "ride_001");
 
       expect(rideActive?.seatsTaken).toBe(1);
+    });
+
+    it("When the current user created a matching ride, Then search excludes it", async () => {
+      const service = makeService();
+
+      const created = await service.createRide({
+        from: "Yaba",
+        to: "Victoria Island",
+        time: "10:00 AM",
+        seats: 2,
+        price: 2000,
+        repeatDays: ["Mon", "Wed"],
+      });
+
+      const result = await service.searchActiveRides("Yaba", "Victoria Island");
+
+      expect(result.map((ride) => ride.id)).not.toContain(created.id);
+    });
+
+    it("When a stored alias is searched by canonical name, Then the ride matches", async () => {
+      const driverService = createNaijaRidesServiceForUser("driver_alias_match");
+
+      const created = await driverService.createRide({
+        from: "Yaba",
+        to: "VI",
+        time: "11:00 AM",
+        seats: 2,
+        price: 2200,
+        repeatDays: ["Mon", "Wed"],
+      });
+
+      const result = await makeService().searchActiveRides("Yaba", "Victoria Island");
+
+      expect(result.map((ride) => ride.id)).toContain(created.id);
+    });
+
+    it("When a stored canonical name is searched by alias, Then the ride matches", async () => {
+      const driverService = createNaijaRidesServiceForUser("driver_canonical_match");
+
+      const created = await driverService.createRide({
+        from: "Yaba",
+        to: "Victoria Island",
+        time: "11:30 AM",
+        seats: 2,
+        price: 2300,
+        repeatDays: ["Tue", "Thu"],
+      });
+
+      const result = await makeService().searchActiveRides("Yaba", "VI");
+
+      expect(result.map((ride) => ride.id)).toContain(created.id);
     });
   });
 
