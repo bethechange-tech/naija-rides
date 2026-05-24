@@ -47,7 +47,7 @@ export const recordAuthFailure = (reason: "missing_bearer" | "invalid_token") =>
   incCounter("auth_failures_total", { reason });
 };
 
-export const recordJoinConflict = (reason: "already_joined" | "ride_full") => {
+export const recordJoinConflict = (reason: "already_joined" | "ride_full" | "own_ride") => {
   incCounter("join_conflicts_total", { reason });
 };
 

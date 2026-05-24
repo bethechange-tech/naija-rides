@@ -1,8 +1,8 @@
 otpRequest:
   post:
     operationId: requestOtp
-    summary: Send SMS OTP to a phone number
-    description: Public endpoint. Starts login by requesting a one-time code for the given phone number.
+    summary: Request MVP OTP for a phone number
+    description: Public endpoint. For the pilot, only whitelisted phone numbers are allowed and the OTP is fixed at 1234.
     x-codeSamples:
       - lang: cURL
         label: Request OTP (cURL)
@@ -33,13 +33,19 @@ otpRequest:
                 phone: "+2348012345678"
     responses:
       "204":
-        description: OTP sent
+        description: OTP accepted for a whitelisted number
+      "403":
+        description: Phone number is not whitelisted
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/ErrorResponse"
 
 otpVerify:
   post:
     operationId: verifyOtp
-    summary: Verify OTP code and return token
-    description: Public endpoint. Exchanges a valid OTP code for a bearer token used on protected routes.
+    summary: Verify OTP code and return auth tokens
+    description: Public endpoint. Exchanges a valid fixed OTP for bearer-compatible access and refresh tokens, and sets auth cookies for browser clients.
     x-codeSamples:
       - lang: cURL
         label: Verify OTP (cURL)
@@ -55,7 +61,7 @@ otpVerify:
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ phone: "+2348012345678", code: "1234" }),
           });
-          const { token } = await verifyResponse.json();
+          const { accessToken, refreshToken } = await verifyResponse.json();
     tags: [Auth]
     security: []
     requestBody:
@@ -66,7 +72,7 @@ otpVerify:
             $ref: "../schemas/auth.yaml#/OtpVerifyRequest"
           examples:
             withCode:
-              summary: Verify OTP and receive auth token
+              summary: Verify OTP and receive auth tokens
               value:
                 phone: "+2348012345678"
                 code: "1234"
@@ -79,10 +85,18 @@ otpVerify:
               $ref: "../schemas/auth.yaml#/OtpVerifyResponse"
             examples:
               success:
-                summary: Token issued
+                summary: Tokens issued
                 value:
                   token: "token_user_001_1713722394"
+                  accessToken: "access_user_001_1713722394"
+                  refreshToken: "refresh_user_001_1713722394"
                   phone: "+2348012345678"
+        headers:
+          Set-Cookie:
+            description: HttpOnly auth cookies for browser-based sessions
+            schema:
+              type: string
+            example: "nr_access_token=access_user_001_1713722394; HttpOnly; Path=/; SameSite=Lax"
       "401":
         description: Invalid code
         content:
@@ -95,12 +109,47 @@ otpVerify:
                 value:
                   error: "Invalid code"
 
+getMe:
+  get: &getMeOperation
+    operationId: getMe
+    summary: Get signed-in user's profile
+    description: Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
+    tags: [Auth]
+    security:
+      - bearerAuth: []
+      - cookieAuth: []
+    responses:
+      "200":
+        description: Current profile
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/MeResponse"
+            examples:
+              profile:
+                summary: Current profile
+                value:
+                  phone: "+2348012345678"
+                  name: "Rasul Omeni"
+                  company: "NaijaRides"
+      "401":
+        description: Missing or invalid bearer token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/ErrorResponse"
+            examples:
+              unauthorized:
+                summary: Missing auth token
+                value:
+                  error: "Unauthorized"
+
 updateMe:
-  post:
+  post: &updateMeOperation
     operationId: updateMe
     summary: Update signed-in user's profile
     description: |
-      Protected endpoint. Requires a Bearer token in the Authorization header.
+      Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
 
       Example header:
       `Authorization: Bearer token_user_001_1713722394`
@@ -126,6 +175,7 @@ updateMe:
     tags: [Auth]
     security:
       - bearerAuth: []
+      - cookieAuth: []
     requestBody:
       required: true
       content:
@@ -164,3 +214,7 @@ updateMe:
                 summary: Missing auth token
                 value:
                   error: "Unauthorized"
+
+me:
+  get: *getMeOperation
+  post: *updateMeOperation

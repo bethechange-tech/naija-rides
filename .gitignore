@@ -19,6 +19,7 @@ yarn-error.log*
 # Local env files
 .env*.local
 packages/db/.env
+packages/db/.env.*
 
 # Turbo
 .turbo

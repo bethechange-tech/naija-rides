@@ -16,6 +16,8 @@ type CreateRideRequest = NonNullable<paths["/rides"]["post"]["requestBody"]>["co
 type CreateRideResponse = NonNullable<paths["/rides"]["post"]["responses"]["201"]["content"]>["application/json"];
 type MyRiderRidesResponse = NonNullable<paths["/me/rides/rider"]["get"]["responses"]["200"]["content"]>["application/json"];
 type MyDriverRidesResponse = NonNullable<paths["/me/rides/driver"]["get"]["responses"]["200"]["content"]>["application/json"];
+type RidePassengersParams = paths["/rides/{rideId}/passengers"]["get"]["parameters"]["path"];
+type RidePassengersResponse = NonNullable<paths["/rides/{rideId}/passengers"]["get"]["responses"]["200"]["content"]>["application/json"];
 type CancelRideParams = paths["/rides/{rideId}"]["delete"]["parameters"]["path"];
 type CancelBookingParams = paths["/me/rides/rider/{bookingId}"]["delete"]["parameters"]["path"];
 
@@ -34,8 +36,8 @@ export const searchRides = async (c: Context<unknown, unknown, SearchRidesQuery>
     return;
   }
 
-  const { from, to } = c.request.query;
-  res.json(await service.searchActiveRides(from, to));
+  const { from, to, day } = c.request.query;
+  res.json(await service.searchActiveRides(from, to, day));
 };
 
 export const getTodayRide = async (_c: Context, req: RequestWithAuth, res: Response) => {
@@ -136,6 +138,24 @@ export const getMyDriverRides = async (_c: Context, req: RequestWithAuth, res: R
 
   const result: MyDriverRidesResponse = await service.getDriverRidesForCurrentUser();
   res.json(result);
+};
+
+export const getRidePassengers = async (c: Context<unknown, RidePassengersParams>, req: RequestWithAuth, res: Response) => {
+  const service = getAuthedService(req);
+  if (!service) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { rideId } = c.request.params;
+  const result = await service.getRidePassengers(rideId);
+  if (!result.ok) {
+    res.status(result.code).json({ error: result.error });
+    return;
+  }
+
+  const payload: RidePassengersResponse = result.passengers;
+  res.status(200).json(payload);
 };
 
 export const cancelRide = async (c: Context<unknown, CancelRideParams>, req: RequestWithAuth, res: Response) => {

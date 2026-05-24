@@ -55,8 +55,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Send SMS OTP to a phone number
-         * @description Public endpoint. Starts login by requesting a one-time code for the given phone number.
+         * Request MVP OTP for a phone number
+         * @description Public endpoint. For the pilot, only whitelisted phone numbers are allowed and the OTP is fixed at 1234.
          */
         post: operations["requestOtp"];
         delete?: never;
@@ -75,8 +75,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Verify OTP code and return token
-         * @description Public endpoint. Exchanges a valid OTP code for a bearer token used on protected routes.
+         * Verify OTP code and return auth tokens
+         * @description Public endpoint. Exchanges a valid fixed OTP for bearer-compatible access and refresh tokens, and sets auth cookies for browser clients.
          */
         post: operations["verifyOtp"];
         delete?: never;
@@ -92,11 +92,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get signed-in user's profile
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
+         */
+        get: operations["getMe"];
         put?: never;
         /**
          * Update signed-in user's profile
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          *
          *     Example header:
          *     `Authorization: Bearer token_user_001_1713722394`
@@ -117,7 +121,7 @@ export interface paths {
         };
         /**
          * Find rides between two locations
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header. Partial, case-insensitive matches on `from` and `to` are supported (e.g. `yab` matches `Yaba`).
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie. Partial, case-insensitive matches on `from` and `to` are supported (e.g. `yab` matches `Yaba`).
          */
         get: operations["searchRides"];
         put?: never;
@@ -137,7 +141,7 @@ export interface paths {
         };
         /**
          * Get the signed-in user's ride for today
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         get: operations["getTodayRide"];
         put?: never;
@@ -159,7 +163,7 @@ export interface paths {
         put?: never;
         /**
          * Record riding or skipping for today
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         post: operations["respondToRide"];
         delete?: never;
@@ -179,7 +183,7 @@ export interface paths {
         put?: never;
         /**
          * Join a ride as a passenger
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         post: operations["joinRide"];
         delete?: never;
@@ -199,7 +203,7 @@ export interface paths {
         put?: never;
         /**
          * Create a new ride
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         post: operations["createRide"];
         delete?: never;
@@ -217,7 +221,7 @@ export interface paths {
         };
         /**
          * Get my ride bookings as a passenger
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         get: operations["getMyRiderRides"];
         put?: never;
@@ -237,9 +241,29 @@ export interface paths {
         };
         /**
          * Get rides I created
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         get: operations["getMyDriverRides"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rides/{rideId}/passengers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get passengers for a specific ride
+         * @description Protected endpoint. Driver-only. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
+         */
+        get: operations["getRidePassengers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -260,7 +284,7 @@ export interface paths {
         post?: never;
         /**
          * Driver cancels a ride and all its bookings
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         delete: operations["cancelRide"];
         options?: never;
@@ -280,7 +304,7 @@ export interface paths {
         post?: never;
         /**
          * Passenger cancels their own booking
-         * @description Protected endpoint. Requires a Bearer token in the Authorization header.
+         * @description Protected endpoint. Accepts either a Bearer token in the Authorization header or the `nr_access_token` cookie.
          */
         delete: operations["cancelBooking"];
         options?: never;
@@ -344,6 +368,15 @@ export interface components {
         };
         /**
          * @example {
+         *       "error": "Unauthorized"
+         *     }
+         */
+        ErrorResponse: {
+            /** @example Unauthorized */
+            error?: string;
+        };
+        /**
+         * @example {
          *       "phone": "+2348012345678",
          *       "code": "1234"
          *     }
@@ -357,23 +390,35 @@ export interface components {
         /**
          * @example {
          *       "token": "token_user_001_1713722394",
+         *       "accessToken": "access_user_001_1713722394",
+         *       "refreshToken": "refresh_user_001_1713722394",
          *       "phone": "+2348012345678"
          *     }
          */
         OtpVerifyResponse: {
             /** @example token_user_001_1713722394 */
-            token?: string;
+            token: string;
+            /** @example access_user_001_1713722394 */
+            accessToken: string;
+            /** @example refresh_user_001_1713722394 */
+            refreshToken: string;
             /** @example +2348012345678 */
-            phone?: string;
+            phone: string;
         };
         /**
          * @example {
-         *       "error": "Unauthorized"
+         *       "phone": "+2348012345678",
+         *       "name": "Rasul Omeni",
+         *       "company": "NaijaRides"
          *     }
          */
-        ErrorResponse: {
-            /** @example Unauthorized */
-            error?: string;
+        MeResponse: {
+            /** @example +2348012345678 */
+            phone: string;
+            /** @example Rasul Omeni */
+            name: string;
+            /** @example NaijaRides */
+            company: string;
         };
         /**
          * @example {
@@ -413,7 +458,7 @@ export interface components {
             driverCompany?: string;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
-            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri")[];
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         RideError: {
             error: string;
@@ -434,7 +479,7 @@ export interface components {
             time: string;
             seats: number;
             price: number;
-            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri")[];
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         RiderBookingItem: {
             /** @description Booking id */
@@ -445,6 +490,7 @@ export interface components {
             driverName: string;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
         };
         DriverRideItem: {
             /** @description Ride id */
@@ -455,6 +501,17 @@ export interface components {
             passengersCount: number;
             /** @enum {string} */
             status: "active" | "cancelled" | "completed";
+            repeatDays: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun")[];
+        };
+        RidePassengerItem: {
+            /** @description Booking id */
+            bookingId: string;
+            /** @description Passenger user id */
+            userId: string;
+            name: string;
+            phone: string;
+            /** Format: date-time */
+            joinedAt: string;
         };
     };
     responses: never;
@@ -524,12 +581,21 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OTP sent */
+            /** @description OTP accepted for a whitelisted number */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Phone number is not whitelisted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -549,6 +615,11 @@ export interface operations {
             /** @description Verified */
             200: {
                 headers: {
+                    /**
+                     * @description HttpOnly auth cookies for browser-based sessions
+                     * @example nr_access_token=access_user_001_1713722394; HttpOnly; Path=/; SameSite=Lax
+                     */
+                    "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -556,6 +627,35 @@ export interface operations {
                 };
             };
             /** @description Invalid code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Missing or invalid bearer token */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -611,6 +711,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                day?: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
             };
             header?: never;
             path?: never;
@@ -842,6 +943,55 @@ export interface operations {
             };
             /** @description Missing or invalid bearer token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RideError"];
+                };
+            };
+        };
+    };
+    getRidePassengers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rideId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active passengers in the ride */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RidePassengerItem"][];
+                };
+            };
+            /** @description Missing or invalid bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RideError"];
+                };
+            };
+            /** @description Not the driver of this ride */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RideError"];
+                };
+            };
+            /** @description Ride not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

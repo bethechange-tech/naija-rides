@@ -1,0 +1,48 @@
+name: Fly Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment to deploy
+        required: true
+        default: staging
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Select Fly config
+        id: config
+        run: |
+          case "${{ github.event.inputs.environment }}" in
+            production)
+              echo "file=fly.api.toml" >> "$GITHUB_OUTPUT"
+              ;;
+            staging)
+              echo "file=fly.api.staging.toml" >> "$GITHUB_OUTPUT"
+              ;;
+            development)
+              echo "file=fly.api.dev.toml" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported environment: ${{ github.event.inputs.environment }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Deploy
+        run: flyctl deploy -c "${{ steps.config.outputs.file }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

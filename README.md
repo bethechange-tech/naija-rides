@@ -96,3 +96,25 @@ The workflow at [`.github/workflows/neon_workflow.yml`](.github/workflows/neon_w
 |------|------|
 | `NEON_API_KEY` | Secret |
 | `NEON_PROJECT_ID` | Variable |
+
+## Deploying API (Fly)
+
+The repository includes three Fly configs:
+
+- `fly.api.toml` (production)
+- `fly.api.staging.toml` (staging)
+- `fly.api.dev.toml` (development)
+
+Local deploy commands:
+
+```bash
+pnpm deploy:api:prod
+pnpm deploy:api:staging
+pnpm deploy:api:dev
+```
+
+GitHub deploy workflow:
+
+- Use `.github/workflows/fly-deploy.yml` via **Run workflow**.
+- Select `production`, `staging`, or `development`.
+- Repository secret required: `FLY_API_TOKEN`.

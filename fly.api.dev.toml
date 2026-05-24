@@ -1,0 +1,35 @@
+app = "nr-lagos-api-dev"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+
+[env]
+  NODE_ENV = "development"
+  APP_ENV = "development"
+  PORT = "3000"
+  HOSTNAME = "0.0.0.0"
+  AUTH_COOKIE_DOMAIN = ""
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 100
+    soft_limit = 80
+
+[[http_service.checks]]
+  interval = "20s"
+  timeout = "5s"
+  grace_period = "20s"
+  method = "GET"
+  path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

@@ -39,7 +39,7 @@ Ride:
       type: array
       items:
         type: string
-        enum: [Mon, Tue, Wed, Thu, Fri]
+        enum: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
 
 RideRespondRequest:
   type: object
@@ -87,7 +87,7 @@ CreateRideRequest:
       minItems: 1
       items:
         type: string
-        enum: [Mon, Tue, Wed, Thu, Fri]
+        enum: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
 
 RideError:
   type: object
@@ -98,7 +98,7 @@ RideError:
 
 RiderBookingItem:
   type: object
-  required: [id, from, to, time, driverName, status]
+  required: [id, from, to, time, driverName, status, repeatDays]
   properties:
     id:
       type: string
@@ -114,10 +114,15 @@ RiderBookingItem:
     status:
       type: string
       enum: [active, cancelled, completed]
+    repeatDays:
+      type: array
+      items:
+        type: string
+        enum: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
 
 DriverRideItem:
   type: object
-  required: [id, from, to, time, passengersCount, status]
+  required: [id, from, to, time, passengersCount, status, repeatDays]
   properties:
     id:
       type: string
@@ -133,3 +138,26 @@ DriverRideItem:
     status:
       type: string
       enum: [active, cancelled, completed]
+    repeatDays:
+      type: array
+      items:
+        type: string
+        enum: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+
+RidePassengerItem:
+  type: object
+  required: [bookingId, userId, name, phone, joinedAt]
+  properties:
+    bookingId:
+      type: string
+      description: Booking id
+    userId:
+      type: string
+      description: Passenger user id
+    name:
+      type: string
+    phone:
+      type: string
+    joinedAt:
+      type: string
+      format: date-time

@@ -5,9 +5,17 @@ import { recordJoinConflict } from "../observability/metrics.js";
 import { LAGOS_LOCATIONS } from "./locations.js";
 
 type DbClient = NonNullable<typeof db>;
+type WhitelistedPhoneDelegate = {
+  findUnique(args: { where: { phone: string } }): Promise<{ phone: string } | null>;
+  createMany(args: { data: Array<{ phone: string; company?: string }>; skipDuplicates?: boolean }): Promise<{ count: number }>;
+  deleteMany(args?: unknown): Promise<{ count: number }>;
+};
+type DbWithWhitelist = DbClient & {
+  whitelistedPhone: WhitelistedPhoneDelegate;
+};
 
 type RideStatus = "active" | "cancelled" | "completed";
-type RepeatDay = "Mon" | "Tue" | "Wed" | "Thu" | "Fri";
+type RepeatDay = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 type RideDto = NonNullable<paths["/rides/search"]["get"]["responses"]["200"]["content"]>["application/json"][number];
 type TodayRideResponse = NonNullable<paths["/rides/today"]["get"]["responses"]["200"]["content"]>["application/json"];
@@ -15,7 +23,9 @@ type RespondToRideResponse = NonNullable<paths["/rides/{rideId}/respond"]["post"
 type CreateRideRequest = NonNullable<paths["/rides"]["post"]["requestBody"]>["content"]["application/json"];
 type RiderBookingItem = NonNullable<paths["/me/rides/rider"]["get"]["responses"]["200"]["content"]>["application/json"][number];
 type DriverRideItem = NonNullable<paths["/me/rides/driver"]["get"]["responses"]["200"]["content"]>["application/json"][number];
+type RidePassengerItem = NonNullable<paths["/rides/{rideId}/passengers"]["get"]["responses"]["200"]["content"]>["application/json"][number];
 type MeUpdateResponse = components["schemas"]["MeUpdateResponse"];
+type MeResponse = components["schemas"]["MeResponse"];
 
 type SeedUser = {
   id: string;
@@ -51,8 +61,16 @@ type SeedRideResponse = {
   riding: boolean;
 };
 
+type SeedWhitelistedPhone = {
+  phone: string;
+  company?: string;
+};
+
 const NAJIA_RIDES_USERNAME_PREFIX = "nr_";
+
 export const CURRENT_USER_ID = "user_me";
+const MOCK_OTP_CODE = "1234";
+const MOCK_OTP_EXPIRY_MINUTES = 10;
 
 const seedUsers: SeedUser[] = [
   { id: CURRENT_USER_ID, username: "nr_rasul", phone: "+2348000000000", name: "Rasul" },
@@ -63,6 +81,11 @@ const seedUsers: SeedUser[] = [
   { id: "rider_c", username: "nr_chioma", phone: "+2348000000005", name: "Chioma" },
   { id: "rider_d", username: "nr_dayo", phone: "+2348000000006", name: "Dayo" },
 ];
+
+const seedWhitelistedPhones: SeedWhitelistedPhone[] = seedUsers.map((user) => ({
+  phone: user.phone,
+  company: user.company,
+}));
 
 const seedRides: SeedRide[] = [
   { id: "ride_001", driverUserId: "driver_tunde", from: "Yaba", to: "Victoria Island", time: "7:30 AM", price: 2500, seatsTotal: 4, status: "active", repeatDays: ["Mon", "Tue", "Wed", "Thu", "Fri"] },
@@ -94,10 +117,26 @@ const sanitizeUsername = (raw: string) => `${NAJIA_RIDES_USERNAME_PREFIX}${raw.r
 
 const buildUsernameFromPhone = (phone: string) => sanitizeUsername(phone);
 
+const expandLocation = (location: string): string[] => {
+  const lower = location.trim().toLowerCase();
+  const byName = LAGOS_LOCATIONS.find((item) => item.name.toLowerCase() === lower);
+  if (byName) {
+    return [lower, ...byName.aliases.map((alias) => alias.toLowerCase())];
+  }
+
+  const byAlias = LAGOS_LOCATIONS.find((item) => item.aliases.some((alias) => alias.toLowerCase() === lower));
+  if (byAlias) {
+    return [byAlias.name.toLowerCase(), ...byAlias.aliases.map((alias) => alias.toLowerCase())];
+  }
+
+  return [lower];
+};
+
 const matchesLocation = (rideLocation: string, query: string): boolean => {
-  if (rideLocation.toLowerCase().includes(query)) return true;
-  const loc = LAGOS_LOCATIONS.find((item) => item.name.toLowerCase() === rideLocation.toLowerCase());
-  return loc?.aliases.some((alias) => alias.toLowerCase().includes(query)) ?? false;
+  const rideForms = expandLocation(rideLocation);
+  const queryForms = expandLocation(query);
+  
+  return rideForms.some((rideForm) => queryForms.some((queryForm) => rideForm.includes(queryForm) || queryForm.includes(rideForm)));
 };
 
 type RideRecord = {
@@ -123,16 +162,19 @@ export class NaijaRidesService {
     private readonly currentUserId: string,
     private readonly database: DbClient = db as DbClient,
     private readonly eventPublisher: RideEventPublisher = rideEventPublisher,
-  ) {}
+  ) { }
 
-  async requestOtpForPhone(phone: string) {
-    const code = process.env.NODE_ENV === "test"
-      ? "1234"
-      : Math.floor(1000 + Math.random() * 9000).toString();
+  private get whitelistedPhones() {
+    return this.database as DbWithWhitelist;
+  }
+
+  async requestOtpForPhone(phone: string): Promise<boolean> {
+    const whitelisted = await this.whitelistedPhones.whitelistedPhone.findUnique({ where: { phone } });
+    if (!whitelisted) {
+      return false;
+    }
 
     await this.database.$transaction(async (tx) => {
-      // Upsert user atomically to prevent a P2002 crash when concurrent
-      // requests for the same phone number race to create the user row.
       const user = await tx.user.upsert({
         where: { phone },
         update: {},
@@ -147,17 +189,31 @@ export class NaijaRidesService {
 
       await tx.otpCode.upsert({
         where: { phone },
-        update: { code, userId: user.id, expiresAt: new Date(Date.now() + 10 * 60_000) },
-        create: { phone, code, userId: user.id, expiresAt: new Date(Date.now() + 10 * 60_000) },
+        update: {
+          code: MOCK_OTP_CODE,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + MOCK_OTP_EXPIRY_MINUTES * 60_000),
+        },
+        create: {
+          phone,
+          code: MOCK_OTP_CODE,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + MOCK_OTP_EXPIRY_MINUTES * 60_000),
+        },
       });
     });
 
-    console.log(`[otp] OTP for ${phone}: ${code}`);
+    return true;
   }
 
   async verifyOtpForPhone(phone: string, code: string): Promise<boolean> {
+    const whitelisted = await this.whitelistedPhones.whitelistedPhone.findUnique({ where: { phone } });
+    if (!whitelisted || code !== MOCK_OTP_CODE) {
+      return false;
+    }
+
     const stored = await this.database.otpCode.findUnique({ where: { phone } });
-    if (!stored || stored.code !== code || stored.expiresAt < new Date()) {
+    if (!stored || stored.code !== MOCK_OTP_CODE || stored.expiresAt < new Date()) {
       return false;
     }
 
@@ -165,15 +221,20 @@ export class NaijaRidesService {
     return true;
   }
 
-  async issueTokenForPhone(phone: string): Promise<string> {
+  async issueTokenForPhone(phone: string): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.database.user.findUnique({ where: { phone }, select: { id: true } });
     if (!user) {
-      return "";
+      return { accessToken: "", refreshToken: "" };
     }
 
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
-    await this.database.authToken.create({ data: { token, userId: user.id } });
-    return token;
+    const accessToken = Buffer.from(`${user.id}:access:${Date.now()}`).toString("base64");
+    const refreshToken = Buffer.from(`${user.id}:refresh:${Date.now()}`).toString("base64");
+
+    await this.database.authToken.create({
+      data: { token: accessToken, refreshToken, userId: user.id },
+    });
+
+    return { accessToken, refreshToken };
   }
 
   async updateCurrentUserProfile(name: string, company?: string): Promise<MeUpdateResponse> {
@@ -194,7 +255,24 @@ export class NaijaRidesService {
     return { name, company };
   }
 
-  async searchActiveRides(from: string, to: string): Promise<RideDto[]> {
+  async getCurrentUserProfile(): Promise<MeResponse | undefined> {
+    const user = await this.database.user.findUnique({
+      where: { id: this.currentUserId },
+      select: { phone: true, name: true, company: true },
+    });
+
+    if (!user) {
+      return undefined;
+    }
+
+    return {
+      phone: user.phone ?? "",
+      name: user.name,
+      company: user.company ?? "",
+    };
+  }
+
+  async searchActiveRides(from: string, to: string, day?: RepeatDay): Promise<RideDto[]> {
     const fromNorm = from.trim().toLowerCase();
     const toNorm = to.trim().toLowerCase();
 
@@ -208,7 +286,8 @@ export class NaijaRidesService {
 
     return rides
       .map((ride) => this.toRideDto(ride))
-      .filter((ride) => matchesLocation(ride.from, fromNorm) && matchesLocation(ride.to, toNorm));
+      .filter((ride) => matchesLocation(ride.from, fromNorm) && matchesLocation(ride.to, toNorm))
+      .filter((ride) => !day || ride.repeatDays.includes(day));
   }
 
   async getTodayRideForCurrentUser(): Promise<TodayRideResponse> {
@@ -259,8 +338,8 @@ export class NaijaRidesService {
     try {
       const result = await this.database.$transaction(async (tx) => {
         // Lock ride row so concurrent joins serialize against seat checks.
-        const lockedRide = await tx.$queryRaw<Array<{ id: string; seatsTotal: number }>>`
-          SELECT id, seats_total as "seatsTotal"
+        const lockedRide = await tx.$queryRaw<Array<{ id: string; seatsTotal: number; driverUserId: string }>>`
+          SELECT id, seats_total as "seatsTotal", driver_user_id as "driverUserId"
           FROM rides
           WHERE id = ${rideId}
           FOR UPDATE
@@ -268,6 +347,11 @@ export class NaijaRidesService {
 
         if (lockedRide.length === 0) {
           return { ok: false as const, code: 404 as const, error: "Ride not found" };
+        }
+
+        if (lockedRide[0].driverUserId === this.currentUserId) {
+          recordJoinConflict("own_ride");
+          return { ok: false as const, code: 409 as const, error: "You cannot join your own ride" };
         }
 
         const existingBooking = await tx.rideBooking.findFirst({
@@ -368,6 +452,7 @@ export class NaijaRidesService {
   async getRiderBookingsForCurrentUser(): Promise<RiderBookingItem[]> {
     const bookings = await this.database.rideBooking.findMany({
       where: { riderUserId: this.currentUserId, cancelledAt: null },
+      orderBy: { createdAt: "desc" },
       include: {
         ride: {
           include: {
@@ -384,12 +469,14 @@ export class NaijaRidesService {
       time: booking.ride.time,
       driverName: booking.ride.driver.name,
       status: booking.ride.status,
+      repeatDays: booking.ride.repeatDays,
     }));
   }
 
   async getDriverRidesForCurrentUser(): Promise<DriverRideItem[]> {
     const rides = await this.database.ride.findMany({
       where: { driverUserId: this.currentUserId },
+      orderBy: { createdAt: "desc" },
       include: {
         rideBookings: { where: { cancelledAt: null }, select: { id: true } },
       },
@@ -402,7 +489,42 @@ export class NaijaRidesService {
       time: ride.time,
       passengersCount: ride.rideBookings.length,
       status: ride.status,
+      repeatDays: ride.repeatDays,
     }));
+  }
+
+  async getRidePassengers(rideId: string): Promise<{ ok: true; passengers: RidePassengerItem[] } | { ok: false; code: 403 | 404; error: string }> {
+    const ride = await this.database.ride.findUnique({
+      where: { id: rideId },
+      select: { driverUserId: true },
+    });
+
+    if (!ride) {
+      return { ok: false, code: 404, error: "Ride not found" };
+    }
+
+    if (ride.driverUserId !== this.currentUserId) {
+      return { ok: false, code: 403, error: "Only the driver can view passengers for this ride" };
+    }
+
+    const bookings = await this.database.rideBooking.findMany({
+      where: { rideId, cancelledAt: null },
+      include: {
+        rider: { select: { id: true, name: true, phone: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      ok: true,
+      passengers: bookings.map((booking) => ({
+        bookingId: booking.id,
+        userId: booking.rider.id,
+        name: booking.rider.name,
+        phone: booking.rider.phone ?? "",
+        joinedAt: booking.createdAt.toISOString(),
+      })),
+    };
   }
 
   async cancelRide(rideId: string): Promise<{ ok: true } | { ok: false; code: 403 | 404; error: string }> {
@@ -523,6 +645,11 @@ export const seedNaijaRidesData = async () => {
       skipDuplicates: true,
     });
 
+    await (tx as DbWithWhitelist).whitelistedPhone.createMany({
+      data: seedWhitelistedPhones,
+      skipDuplicates: true,
+    });
+
     await tx.ride.createMany({
       data: seedRides.map((ride) => ({
         id: ride.id,
@@ -556,14 +683,15 @@ export const seedNaijaRidesData = async () => {
 };
 
 export const resetNaijaRidesData = async () => {
-  await db.$transaction([
-    db.authToken.deleteMany(),
-    db.otpCode.deleteMany(),
-    db.rideResponse.deleteMany(),
-    db.rideBooking.deleteMany(),
-    db.ride.deleteMany(),
-    db.user.deleteMany({ where: { username: { startsWith: NAJIA_RIDES_USERNAME_PREFIX } } }),
-  ]);
+  await db.$transaction(async (tx) => {
+    await tx.authToken.deleteMany();
+    await tx.otpCode.deleteMany();
+    await (tx as DbWithWhitelist).whitelistedPhone.deleteMany();
+    await tx.rideResponse.deleteMany();
+    await tx.rideBooking.deleteMany();
+    await tx.ride.deleteMany();
+    await tx.user.deleteMany({ where: { username: { startsWith: NAJIA_RIDES_USERNAME_PREFIX } } });
+  });
 
   await seedNaijaRidesData();
 };

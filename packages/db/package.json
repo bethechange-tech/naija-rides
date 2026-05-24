@@ -16,6 +16,7 @@
     "build:prisma": "prisma generate",
     "migrate": "prisma migrate",
     "seed": "pnpm --dir ../.. --filter @repo/api seed",
+    "seed:ensure": "pnpm --dir ../.. --filter @repo/api seed:ensure",
     "push": "prisma db push"
   },
   "devDependencies": {

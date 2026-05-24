@@ -9,6 +9,7 @@
     "generate:types": "openapi-typescript openapi/index.yaml -o src/openapi-types.ts",
     "lint": "eslint .",
     "seed": "tsx src/seed.ts",
+    "seed:ensure": "tsx src/seed.ensure.ts",
     "test": "vitest run",
     "start": "node dist/index.js"
   },

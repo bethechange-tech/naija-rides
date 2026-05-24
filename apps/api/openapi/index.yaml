@@ -5,8 +5,9 @@ info:
   description: |
     OTP login flow:
     1. `POST /auth/otp/request` with a phone number to request an OTP.
-    2. `POST /auth/otp/verify` with phone and code to receive a bearer token.
-    3. Send `Authorization: Bearer <token>` for all protected routes.
+    2. `POST /auth/otp/verify` with phone and code to receive bearer tokens.
+    3. The API also sets httpOnly auth cookies (`nr_access_token` and `nr_refresh_token`).
+    4. Protected routes accept either `Authorization: Bearer <token>` or the `nr_access_token` cookie.
 
     Public routes:
     - `/health`
@@ -20,9 +21,14 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: nr_access_token
 
 security:
   - bearerAuth: []
+  - cookieAuth: []
 
 tags:
   - name: Health
@@ -48,7 +54,7 @@ paths:
     $ref: "./paths/auth.yaml#/otpVerify"
 
   /me:
-    $ref: "./paths/auth.yaml#/updateMe"
+    $ref: "./paths/auth.yaml#/me"
 
   /rides/search:
     $ref: "./paths/rides.yaml#/searchRides"
@@ -70,6 +76,9 @@ paths:
 
   /me/rides/driver:
     $ref: "./paths/rides.yaml#/myDriverRides"
+
+  /rides/{rideId}/passengers:
+    $ref: "./paths/rides.yaml#/ridePassengers"
 
   /rides/{rideId}:
     $ref: "./paths/rides.yaml#/cancelRide"
